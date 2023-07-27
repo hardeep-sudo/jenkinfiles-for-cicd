@@ -1,0 +1,55 @@
+pipeline {
+    agent any
+
+    environment {
+        HOME = sh(returnStdout: true, script: 'echo $HOME').trim()
+    }
+
+    stages {
+        stage('Checkout List-Logs') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Print List of Log Files') {
+            steps {
+                script {
+                    def list = sh(script: 'sudo ls -l /root/.pm2/logs/', returnStdout: true)
+                      println(list)
+                }
+            }
+        }
+        stage('User Input') {
+            steps {
+                script {
+                    def logFilePath = input(
+                        id: 'userLogInput',
+                        message: 'Please enter the path to the log file:',
+                        ok: 'Proceed',
+                        parameters: [
+                            string(name: 'logFilePath', description: 'Path to the log file')
+                        ]
+                    )
+                    
+                    env.LOG_FILE_PATH = logFilePath
+                }
+            }
+        }
+
+        stage('Tail Log File') {
+            steps {
+                script {
+                    // Make sure the log file path is available
+                    def logFilePath = env.LOG_FILE_PATH
+                    if (logFilePath == null || logFilePath.trim() == '') {
+                        error("Log file path not provided. Aborting the build.")
+                    } else {
+                        // Tail the log file and display its contents
+                        sh "sudo tail -n 100 /root/.pm2/logs/${logFilePath}"
+                    }
+                }
+            }
+        }
+    }
+}
