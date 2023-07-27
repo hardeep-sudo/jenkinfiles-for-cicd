@@ -1,0 +1,24 @@
+pipeline {
+    agent any
+
+    environment {
+        HOME = sh(returnStdout: true, script: 'echo $HOME').trim()
+    }
+
+    stages {
+        stage('Checkout Backend-Code') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('PM2 Status Check') {
+            steps {
+                script {
+                    def PM2List = sh(script: 'sudo pm2 list', returnStdout: true)
+                      println(PM2List)
+                }
+            }
+        }
+    }
+}
