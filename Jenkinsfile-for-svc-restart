@@ -1,0 +1,62 @@
+pipeline {
+    agent any
+    tools {
+        nodejs "NodeJs"
+    }
+
+    environment {
+        HOME = sh(returnStdout: true, script: 'echo $HOME').trim()
+
+    }
+
+    stages {
+        stage('Checkout RVAC-BC') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('PM2 Status Check') {
+            steps {
+                script {
+                    def PM2List = sh(script: 'sudo pm2 list', returnStdout: true)
+                      println(PM2List)
+                }
+            }
+        }
+
+        stage('NPM Install') {
+            steps {
+                script {
+                    def npminstall = sh(script: 'sudo npm install', returnStdout: true)
+                      println(npminstall)
+                }
+            }
+        }
+            
+
+        stage('Deploy') {
+            steps {
+                script {
+                    sh '''
+                        #!/bin/bash
+
+                        # Check if pm2 process exists for appname
+                        if sudo pm2 list | grep -q "appname"; then
+                            echo "Stopping the service..."
+                            sudo sleep 30 && sudo pm2 stop appname
+                        else
+                            echo "No service (appname) exists."
+                        fi
+
+                        echo "Building with npm..."
+                        sudo sleep 30 && sudo npm run build
+
+                        echo "Starting the service..."
+                        sudo pm2 start appname
+                    '''
+                }
+            }
+        }
+    }
+}
